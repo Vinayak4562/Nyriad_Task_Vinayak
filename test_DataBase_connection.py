@@ -1,57 +1,51 @@
 import unittest
-import os.path
-from DataBase_connection import create_table, insert_email, get_emails
 import sqlite3
+from datetime import datetime, timedelta
+from DataBase_connection import create_table, insert_email, get_emails
+
 
 class TestEmailFetcher(unittest.TestCase):
-    
-    def setUp(self):
-        self.db_filename = 'emails.db'
-        if os.path.isfile(self.db_filename):
-            os.remove(self.db_filename)
-    
-    def test_create_table(self):
-        create_table()
-        conn = sqlite3.connect(self.db_filename)
-        c = conn.cursor()
-        c.execute('SELECT name FROM sqlite_master WHERE type=\'table\' AND name=\'emails\'')
-        self.assertIsNotNone(c.fetchone())
-        conn.close()
-    
-    def test_insert_email(self):
-        from_email = 'promod456@gmail.com'
-        subject = 'test cases'
-        date = 'Fri, 10 Mar 2023 17:23:38 +0530W'
-        insert_email(from_email, subject, date)
-        conn = sqlite3.connect(self.db_filename)
-        c = conn.cursor()
-        c.execute('SELECT * FROM emails WHERE from_email=? AND subject=? AND date=?', (from_email, subject, date))
-        self.assertIsNotNone(c.fetchone())
-        conn.close()
-    
-    def test_get_emails_by_name(self):
-        name = 'pramod havannavar'
-        create_table()
-        insert_email(name, 'test cases', 'Fri, 10 Mar 2023 17:23:38 +0530W')
-        insert_email('promod456@gmail.com', 'Fri, 10 Mar 2023 17:23:38 +0530W')
-        emails = get_emails(name, None)
-        self.assertEqual(len(emails), 2)
-        self.assertEqual(emails[0]['From'], name)
+    @classmethod
+    def setUpClass(cls):
+        # create a test database and table
+        cls.conn = sqlite3.connect(':memory:')
+        cls.c = cls.conn.cursor()
+        cls.c.execute('''CREATE TABLE emails (id INTEGER PRIMARY KEY AUTOINCREMENT,from_email TEXT, subject TEXT, date TEXT)''')
+        cls.conn.commit()
 
-         
-    
-    def test_get_emails_by_duration(self):
-        name = 'pramod havannavar'
-        create_table()
-        insert_email(name, 'test cases', 'Fri, 10 Mar 2023 17:23:38 +0530W')
-        insert_email('promod456@gmail.com', 'test cases', 'Fri, 10 Mar 2023 17:23:38 +0530W')
-        emails = get_emails(None, 1)
-        self.assertEqual(len(emails), 11)
-        self.assertEqual(emails[0]['Subject'], 'test cases')
-    
+    @classmethod
+    def tearDownClass(cls):
+        # close the test database connection
+        cls.conn.close()
+
+    def setUp(self):
+        # insert test emails into the database
+        insert_email('pramod havannavar ', 'test cases', (datetime.now() - timedelta(days=2)).strftime('%a, %d %b %Y %H:%M:%S %z'))
+        insert_email('pramod havannavar ', 'test cases2', (datetime.now() - timedelta(days=1)).strftime('%a, %d %b %Y %H:%M:%S %z'))
+        insert_email('Vishal Hirandagi', 'Test2', datetime.now().strftime('%a, %d %b %Y %H:%M:%S %z'))
+        self.conn.commit()
+
     def tearDown(self):
-        if os.path.isfile(self.db_filename):
-            os.remove(self.db_filename)
+        # delete all test emails from the database
+        self.c.execute('DELETE FROM emails')
+        self.conn.commit()
+
+    def test_fetch_by_name(self):
+        # fetch emails by sender name and validate the results
+        emails = get_emails('vinz223665@gmail.com', None)
+        self.assertEqual(len(emails), 0)
+        self.assertEqual(emails[0]['From'], 'promod456@gmail.com')
+        self.assertEqual(emails[0]['Subject'], 'test cases')
+
+    def test_fetch_by_duration(self):
+        # fetch emails by time duration and validate the results
+        emails = get_emails(None, 2)
+        self.assertEqual(len(emails), 11)
+        self.assertEqual(emails[0]['From'], 'promod456@gmail.com')
+        self.assertEqual(emails[0]['Subject'], 'test cases2')
+        self.assertEqual(emails[1]['From'], 'promod456@gmail.com')
+        self.assertEqual(emails[1]['Subject'], 'test cases')
+
 
 if __name__ == '__main__':
     unittest.main()

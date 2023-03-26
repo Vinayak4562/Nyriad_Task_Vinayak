@@ -5,24 +5,24 @@ import sqlite3
 from datetime import datetime, timedelta
 
 def create_table():
-    conn = sqlite3.connect('emails.db')
-    c = conn.cursor()
+    connection = sqlite3.connect('emails.db')
+    cursor = connection.cursor()
 
     # create table if it doesn't exist
-    c.execute('''CREATE TABLE IF NOT EXISTS emails (id INTEGER PRIMARY KEY AUTOINCREMENT,from_email TEXT, subject TEXT, date TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS emails (id INTEGER PRIMARY KEY AUTOINCREMENT,from_email TEXT, subject TEXT, date TEXT)''')
 
-    conn.commit()
-    conn.close()
+    connection.commit()
+    connection.close()
 
 def insert_email(from_email, subject, date):
-    conn = sqlite3.connect('emails.db')
-    c = conn.cursor()
+    connection = sqlite3.connect('emails.db')
+    cursor = connection.cursor()
 
     # insert email into database
-    c.execute('INSERT INTO emails (from_email, subject, date) VALUES (?, ?, ?)',(from_email, subject, date))
+    cursor.execute('INSERT INTO emails (from_email, subject, date) VALUES (?, ?, ?)',(from_email, subject, date))
 
-    conn.commit()
-    conn.close()
+    connection.commit()
+    connection.close()
 
 def get_emails(name, duration):
     # connect to IMAP server
